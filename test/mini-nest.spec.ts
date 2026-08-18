@@ -3,11 +3,7 @@ import { Inject } from '../src/decorators/inject';
 import { Injectable } from '../src/decorators/injectable';
 
 describe('mini-nest', () => {
-  let container: Container;
-
-  beforeEach(() => {
-    container = new Container();
-  });
+  const container = new Container();
 
   describe('constructor dependencies resolution', () => {
     it('should resolve a simple dependencies graph', () => {
