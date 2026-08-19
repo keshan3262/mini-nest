@@ -2,7 +2,7 @@ import { Container } from '../src/container';
 import { Inject } from '../src/decorators/inject';
 import { Injectable } from '../src/decorators/injectable';
 
-describe('mini-nest', () => {
+describe('IoC container', () => {
   const container = new Container();
 
   describe('constructor dependencies resolution', () => {
