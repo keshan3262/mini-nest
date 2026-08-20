@@ -1,4 +1,5 @@
 import { Controller } from './decorators/controller';
+import { Injectable } from './decorators/injectable';
 import { Get, Method, Post } from './decorators/methods';
 import { Body, Param, Query } from './decorators/params';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -8,35 +9,52 @@ import { CONTROLLER_PREFIX, CONTROLLER_ROUTES } from './tokens';
 
 type Constructor<T = unknown> = new (...args: any[]) => T;
 
-const dummyUsers = [
-  { id: 1, name: 'John Doe', email: 'john.doe@example.com', age: 20 },
-  { id: 42, name: 'Jane Doe', email: 'jane.doe@example.com', age: 21 },
-  { id: 100, name: 'John Smith', email: 'john.smith@example.com', age: 22 },
-  { id: 101, name: 'Jane Smith', email: 'jane.smith@example.com', age: 23 },
-  { id: 102, name: 'John Doe', email: 'john.doe@example.com', age: 24 },
-  { id: 103, name: 'Jane Doe', email: 'jane.doe@example.com', age: 25 },
-  { id: 104, name: 'John Smith', email: 'john.smith@example.com', age: 26 },
-  { id: 105, name: 'Jane Smith', email: 'jane.smith@example.com', age: 27 },
-  { id: 106, name: 'John Doe', email: 'john.doe@example.com', age: 28 },
-  { id: 107, name: 'Jane Doe', email: 'jane.doe@example.com', age: 29 },
-  { id: 108, name: 'John Smith', email: 'john.smith@example.com', age: 30 }
-]
+@Injectable()
+class UserService {
+  private dummyUsers = [
+    { id: 1, name: 'John Doe', email: 'john.doe@example.com', age: 20 },
+    { id: 42, name: 'Jane Doe', email: 'jane.doe@example.com', age: 21 },
+    { id: 100, name: 'John Smith', email: 'john.smith@example.com', age: 22 },
+    { id: 101, name: 'Jane Smith', email: 'jane.smith@example.com', age: 23 },
+    { id: 102, name: 'John Doe', email: 'john.doe@example.com', age: 24 },
+    { id: 103, name: 'Jane Doe', email: 'jane.doe@example.com', age: 25 },
+    { id: 104, name: 'John Smith', email: 'john.smith@example.com', age: 26 },
+    { id: 105, name: 'Jane Smith', email: 'jane.smith@example.com', age: 27 },
+    { id: 106, name: 'John Doe', email: 'john.doe@example.com', age: 28 },
+    { id: 107, name: 'Jane Doe', email: 'jane.doe@example.com', age: 29 },
+    { id: 108, name: 'John Smith', email: 'john.smith@example.com', age: 30 }
+  ];
+
+  getUsers(limit?: number) {
+    return this.dummyUsers.slice(0, limit);
+  }
+
+  addUser(user: CreateUserDto) {
+    return { ...user, id: this.dummyUsers.at(-1)!.id + 1 };
+  }
+
+  getUser(id: number) {
+    return this.dummyUsers.find(user => user.id === id);
+  }
+}
 
 @Controller('users')
 export class UserController {
+  constructor(private readonly userService: UserService) {}
+
   @Get(':id')
   getUser(@Param('id', new PositiveIntPipe<number>(true)) id: number) {
-    return dummyUsers.find(user => user.id === id) ?? null;
+    return this.userService.getUser(id) ?? null;
   }
 
   @Get('/')
   getUsers(@Query('limit', new PositiveIntPipe(false)) limit?: number) {
-    return dummyUsers.slice(0, limit);
+    return this.userService.getUsers(limit);
   }
 
   @Post('/')
   addUser(@Body(new ValidationPipe(CreateUserDto)) user: CreateUserDto) {
-    return { ...user, id: 109 };
+    return this.userService.addUser(user);
   }
 }
 

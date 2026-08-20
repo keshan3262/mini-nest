@@ -1,9 +1,10 @@
-import { container, server } from '../src/dispatcher';
+import { container, createServer } from '../src/dispatcher';
 import { CreateUserDto } from '../src/dto/create-user.dto';
 import { UserController } from '../src/router';
 
 describe('server', () => {
   let spies: jest.SpyInstance[] = [];
+  const server = createServer();
 
   beforeAll(async () => {
     await new Promise<void>(resolve => {

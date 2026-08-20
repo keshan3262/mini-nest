@@ -1,3 +1,6 @@
 import 'reflect-metadata';
 
-import './dispatcher';
+import { createServer } from './dispatcher';
+
+createServer();
+

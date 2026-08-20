@@ -4,9 +4,32 @@ export interface PipeTransform<T = any, R = any> {
   transform(value: T): R;
 }
 
-const paramFactory = <T extends unknown[]>(
+interface ParamResolutionBase {
+  type: string;
+  name?: string;
+  transform?: PipeTransform;
+}
+
+interface ParamResolutionBody extends ParamResolutionBase {
+  type: 'body';
+  name?: undefined;
+}
+
+interface ParamResolutionParam extends ParamResolutionBase {
+  type: 'param';
+  name: string;
+}
+
+interface ParamResolutionQuery extends ParamResolutionBase {
+  type: 'query';
+  name: string;
+}
+
+export type ParamResolution = ParamResolutionBody | ParamResolutionParam | ParamResolutionQuery;
+
+const paramFactory = <T extends unknown[], U extends ParamResolution>(
   type: string,
-  paramResolutionFn: (...args: T) => { type: string; [k: string]: any }
+  paramResolutionFn: (...args: T) => U
 ) => (...args: T): ParameterDecorator => (target, propertyKey, index) => {
   if (propertyKey === undefined) {
     throw new Error(`${type} decorator can only be used on class methods (see ${target.constructor.name})`);
