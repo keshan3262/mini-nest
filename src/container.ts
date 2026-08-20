@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { DEPENDENCIES, INJECTABLE } from './tokens';
 import { InjectableOptions } from './decorators/injectable';
 import { MethodArgDependency } from './decorators/inject';

@@ -1,15 +1,6 @@
-import express from 'express';
+import 'reflect-metadata';
 
-const app = express();
+import { createServer } from './dispatcher';
 
-app.get('/health', (req, res) => {
-  res.send('OK');
-});
+createServer();
 
-app.get('/users', (req, res) => {
-  res.json([{ id: 1, name: 'John Doe' }]);
-});
-
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
