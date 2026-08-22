@@ -1,16 +1,22 @@
+import { z } from 'zod';
+
 import { Controller } from './decorators/controller';
+import { UseGuards } from './decorators/guards';
 import { Injectable } from './decorators/injectable';
+import { UseInterceptors } from './decorators/interceptors';
 import { Get, Method, Post } from './decorators/methods';
 import { Body, Param, Query } from './decorators/params';
-import { CreateUserDto } from './dto/create-user.dto';
+import { AuthGuard } from './guards/auth.guard';
+import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { PositiveIntPipe } from './pipes/positive-int.pipe';
-import { ValidationPipe } from './pipes/validation.pipe';
 import { CONTROLLER_PREFIX, CONTROLLER_ROUTES } from './tokens';
-
-type Constructor<T = unknown> = new (...args: any[]) => T;
+import { ZodValidationPipe } from './pipes/zod-validation.pipe';
+import { Constructor } from './types';
+import { UseFilters } from './decorators/filters';
+import { DefaultExceptionFilter } from './filters/exception.filter';
 
 @Injectable()
-class UserService {
+export class UserService {
   private dummyUsers = [
     { id: 1, name: 'John Doe', email: 'john.doe@example.com', age: 20 },
     { id: 42, name: 'Jane Doe', email: 'jane.doe@example.com', age: 21 },
@@ -25,7 +31,7 @@ class UserService {
     { id: 108, name: 'John Smith', email: 'john.smith@example.com', age: 30 }
   ];
 
-  getUsers(limit?: number) {
+  async getUsers(limit?: number) {
     return this.dummyUsers.slice(0, limit);
   }
 
@@ -38,22 +44,34 @@ class UserService {
   }
 }
 
+const createUserSchema = z.object({
+  name: z.string().min(2),
+  email: z.email(),
+  age: z.int().min(16)
+});
+type CreateUserDto = z.infer<typeof createUserSchema>;
+
 @Controller('users')
+@UseFilters(DefaultExceptionFilter)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get(':id')
+  @UseInterceptors(LoggingInterceptor)
   getUser(@Param('id', new PositiveIntPipe<number>(true)) id: number) {
     return this.userService.getUser(id) ?? null;
   }
 
   @Get('/')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(LoggingInterceptor)
   getUsers(@Query('limit', new PositiveIntPipe(false)) limit?: number) {
     return this.userService.getUsers(limit);
   }
 
   @Post('/')
-  addUser(@Body(new ValidationPipe(CreateUserDto)) user: CreateUserDto) {
+  @UseInterceptors(LoggingInterceptor)
+  addUser(@Body(new ZodValidationPipe(createUserSchema)) user: CreateUserDto) {
     return this.userService.addUser(user);
   }
 }

@@ -4,7 +4,7 @@
 
 One-stage build container has a size of 314 MB because of installed development dependencies and source code, while the multi-stage build container has a size of 254 MB.
 
-To build the backend container, run `docker build -f Dockerfile -t hw-07 .`. Then run it with command `docker run -d --name hw-07 -p 3000:3000 hw-07`.
+To build the backend container, run `docker build -f Dockerfile -t hw-08 .`. Then run it with command `docker run -d --name hw-08 -p 3000:3000 hw-08`.
 
 You can start both backend and Postgres DB in 'production' mode with command `docker compose -f docker-compose.yml up -d --wait` or in development mode with hot reload using `docker compose up -d --wait`.
 To check that Postgres data is persisted, do the following steps when all containers are up:
