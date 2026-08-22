@@ -33,3 +33,35 @@ This project contains a prototype of Nest.js framework. You can run tests using 
 }
 ```
 `experimentalDecorators` enables TypeScript decorators usage, and `emitDecoratorMetadata` enables emitting type metadata for decorated declarations. Type metadata for constructors is fetched with `Reflect.getMetadata('design:paramtypes', constructor)` call and is then used to resolve constructor arguments automatically. However, this call resolves arguments of interface types to `Object` constructor, so you have to decorate such arguments with `@Inject(token)`.
+
+The request lifecycle is displayed below. Legend:
+- `s`: no error was thrown or returned in middleware callback and all guards return `true`.
+- `f`: an error was thrown or returned in middleware callback, or some guard returns `false`.
+- `n`: exception filters do not handle the received error.
+The default error handler responds with an error code and body specified in error if it is an instance of `ErrorWithStatusCode`; otherwise, returns a response with error code 500.
+```
+Parsed request
+  | s
+  V          f                                n
+Middlewares ------------|-> Exception filters -> Default error handler
+  | s                   |       | s      |f
+  V     f               |       |        ---> Response with error code 500
+Guards -----------------|       |
+  | s                   |       V
+  V           f         | Filter-defined response
+Interceptors -----------|
+  | s                   |
+  V    f                |
+Pipes ------------------|
+  | s                   |
+  V      f              |
+Handler ----------------|
+  | s                   |
+  V                  f  |
+Interceptors' pipes ----|
+  | s
+  V
+Successful response
+```
+
+`AsyncLocalStorage` usage in `contextMiddleware` enables passing request ID to any level of calls depth without arguments drilling and, in difference to a global variable, without overwriting it by a concurrent request.
