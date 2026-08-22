@@ -1,8 +1,7 @@
 import { DEPENDENCIES, INJECTABLE } from './tokens';
 import { InjectableOptions } from './decorators/injectable';
 import { MethodArgDependency } from './decorators/inject';
-
-type Constructor<T = unknown> = new (...args: any[]) => T;
+import { Constructor } from './types';
 
 export class Container {
   private readonly singletons: Map<Constructor, unknown> = new Map();
