@@ -66,13 +66,13 @@ export const createServer = (port = 3000) => http.createServer(async (req, res) 
 
     const requestEssentials = { method: req.method!, url: url, headers, body };
 
-    const makeFlowWithMiddleware = (onSuccess: () => Promise<void>, i = 0): () => Promise<void> => {
-      if (i === middlewares.length) {
+    const makeFlowWithMiddlewares = (onSuccess: () => Promise<void>, startIndex = 0): () => Promise<void> => {
+      if (startIndex === middlewares.length) {
         return onSuccess;
       }
 
-      const middleware = middlewares[i];
-      const nextSuccess = makeFlowWithMiddleware(onSuccess, i + 1);
+      const middleware = middlewares[startIndex];
+      const nextSuccess = makeFlowWithMiddlewares(onSuccess, startIndex + 1);
 
       return () => new Promise<void>((resolve, reject) => {
         middleware(requestEssentials, res, err => {
@@ -84,26 +84,8 @@ export const createServer = (port = 3000) => http.createServer(async (req, res) 
         });
       })
     };
-    await makeFlowWithMiddleware(() => new Promise<void>((globalResolve, globalReject) => {
-      const guards: Guards = Reflect.getMetadata(METHOD_GUARDS, controller, methodName) ?? [];
-
-      from(Promise.allSettled(guards.map(async (Guard) => {
-        const guardInstance = container.resolve(Guard);
-    
-        return await guardInstance.canActivate(requestEssentials);
-      }))).pipe(
-        switchMap(results => {
-          const failedGuardResult = results.find(result => result.status === 'rejected');
-          if (failedGuardResult) {
-            return throwError(() => failedGuardResult.reason);
-          }
-    
-          if (results.some(result => result.status === 'fulfilled' && !result.value)) {
-            return throwError(() => new ForbiddenError());
-          }
-    
-          return of(true);
-        }),
+    await makeFlowWithMiddlewares(() => new Promise<void>((resolve, reject) => {
+      guardsStage$(requestEssentials, controller, methodName).pipe(
         switchMap(() => {
           const interceptors: Interceptors = Reflect.getMetadata(METHOD_INTERCEPTORS, controller, methodName) ?? [];
           let handle: () => Observable<any> = () => from(Promise.resolve(
@@ -122,19 +104,22 @@ export const createServer = (port = 3000) => http.createServer(async (req, res) 
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(result));
-          globalResolve();
+          resolve();
         },
-        error: err => {
-          flowErrorHandler(err, requestEssentials, res, Controller, err => {
-            if (err === undefined) {
-              globalResolve();
-            } else {
-              globalReject(err);
-            }
-          });
-        }
+        error: reject
       })
-    }))();
+    }))().catch(
+      err => new Promise<void>(
+        (resolve, reject) =>
+          flowErrorHandler(err, requestEssentials, res, Controller, newError => {
+            if (newError === undefined) {
+              resolve();
+            } else {
+              reject(newError);
+            }
+          })
+      )
+    );
   } catch (error) {
     if (error instanceof ErrorWithStatusCode) {
       res.statusCode = error.statusCode;
