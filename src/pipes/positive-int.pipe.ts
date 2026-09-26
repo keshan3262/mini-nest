@@ -1,7 +1,12 @@
-import { ValidationError } from 'class-validator';
+import z from 'zod';
+
 import { PipeTransform } from '../decorators/params';
+import { ValidationContext } from '../context/validation-context';
+import { BadRequestError } from '../errors';
 
 export class PositiveIntPipe<T extends number | undefined> implements PipeTransform<string, T> {
+  static readonly numberSchema = z.number().int().positive();
+
   constructor(readonly required: (undefined extends T ? false : true)) {}
 
   transform(value: string) {
@@ -9,14 +14,15 @@ export class PositiveIntPipe<T extends number | undefined> implements PipeTransf
       return undefined as T;
     }
 
-    const id = Number.parseInt(value);
+    const parsedValue = Number.parseInt(value);
+    const validationResult = PositiveIntPipe.numberSchema.safeParse(parsedValue);
 
-    if (Number.isNaN(id) || id < 1) {
-      const error = new ValidationError();
-      error.constraints = { isPositiveInt: 'Must be a positive integer' };
-      throw error;
+    if (!validationResult.success) {
+      throw new BadRequestError([
+        { property: ValidationContext.singleFieldName, constraints: { isPositiveInt: 'Must be a positive integer' } }
+      ]);
     }
 
-    return id as T;
+    return validationResult.data as T;
   }
 }
